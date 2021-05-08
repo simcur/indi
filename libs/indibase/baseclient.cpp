@@ -121,17 +121,7 @@ BaseClientPrivate::~BaseClientPrivate()
 
 void BaseClientPrivate::clear()
 {
-    while (!cDevices.empty())
-    {
-        delete cDevices.back();
-        cDevices.pop_back();
-    }
-    cDevices.clear();
-    while (!blobModes.empty())
-    {
-        delete blobModes.back();
-        blobModes.pop_back();
-    }
+    listOfDevices.clear();
     blobModes.clear();
 }
 
@@ -524,15 +514,15 @@ int BaseClientPrivate::dispatchCommand(XMLEle *root, char *errmsg)
     const char *tag = tagXMLEle(root);
 
     if (!strcmp(tag, "message"))
-        return messageCmd(root, errmsg);
+        return messageCommand(root, errmsg);
     else if (!strcmp(tag, "delProperty"))
-        return delPropertyCmd(root, errmsg);
+        return delPropertyCommand(root, errmsg);
     // Just ignore any getProperties we might get
     else if (!strcmp(tag, "getProperties"))
         return INDI_PROPERTY_DUPLICATED;
 
     /* Get the device, if not available, create it */
-    INDI::BaseDevice *dp = findDev(root, 1, errmsg);
+    INDI::BaseDevice *dp = findDevice(root, true, errmsg);
     if (dp == nullptr)
     {
         strcpy(errmsg, "No device available and none was created");
@@ -582,41 +572,19 @@ int BaseClientPrivate::dispatchCommand(XMLEle *root, char *errmsg)
 }
 
 
-int BaseClientPrivate::deleteDevice(const char *devName, char *errmsg)
-{
-    std::vector<INDI::BaseDevice *>::iterator devicei;
-
-    for (devicei = cDevices.begin(); devicei != cDevices.end();)
-    {
-        if (!strcmp(devName, (*devicei)->getDeviceName()))
-        {
-            parent->removeDevice(*devicei);
-            delete *devicei;
-            devicei = cDevices.erase(devicei);
-            return 0;
-        }
-        else
-            ++devicei;
-    }
-
-    snprintf(errmsg, MAXRBUF, "Device %s not found", devName);
-    return INDI_DEVICE_NOT_FOUND;
-}
-
-
 /* delete the property in the given device, including widgets and data structs.
  * when last property is deleted, delete the device too.
  * if no property name attribute at all, delete the whole device regardless.
  * return 0 if ok, else -1 with reason in errmsg[].
  */
-int BaseClientPrivate::delPropertyCmd(XMLEle *root, char *errmsg)
+int BaseClientPrivate::delPropertyCommand(XMLEle *root, char *errmsg)
 {
     XMLAtt *ap;
     INDI::BaseDevice *dp;
 
     /* dig out device and optional property name */
-    dp = findDev(root, 0, errmsg);
-    if (!dp)
+    dp = findDevice(root, false, errmsg);
+    if (dp == nullptr)
         return INDI_DEVICE_NOT_FOUND;
 
     dp->checkMessage(root);
@@ -630,110 +598,31 @@ int BaseClientPrivate::delPropertyCmd(XMLEle *root, char *errmsg)
         if (rProp == nullptr)
         {
             // Silently ignore B_ONLY clients.
-            if (blobModes.empty() || blobModes[0]->blobMode == B_ONLY)
+            if (blobModes.empty() || blobModes.front().blobMode == B_ONLY)
                 return 0;
 
             snprintf(errmsg, MAXRBUF, "Cannot delete property %s as it is not defined yet. Check driver.", valuXMLAtt(ap));
             return -1;
         }
         if (sConnected)
-            parent->removeProperty(rProp);
+            parent->removeProperty(rProp); // Mediator
         int errCode = dp->removeProperty(valuXMLAtt(ap), errmsg);
 
         return errCode;
     }
     // delete the whole device
     else
-        return deleteDevice(dp->getDeviceName(), errmsg);
-}
-
-
-INDI::BaseDevice *BaseClientPrivate::findDev(const char *devName, char *errmsg)
-{
-    auto pos = std::find_if(cDevices.begin(), cDevices.end(), [devName](INDI::BaseDevice * oneDevice)
-    {
-        return !strcmp(oneDevice->getDeviceName(), devName);
-    });
-
-    if (pos != cDevices.end())
-        return *pos;
-
-    snprintf(errmsg, MAXRBUF, "Device %s not found", devName);
-    return nullptr;
-}
-
-/* add new device */
-INDI::BaseDevice *BaseClientPrivate::addDevice(XMLEle *dep, char *errmsg)
-{
-    //devicePtr dp(new INDI::BaseDriver());
-    INDI::BaseDevice *dp = new INDI::BaseDevice();
-    char *device_name;
-
-    /* allocate new INDI::BaseDriver */
-    XMLAtt *ap = findXMLAtt(dep, "device");
-    if (!ap)
-    {
-        strncpy(errmsg, "Unable to find device attribute in XML element. Cannot add device.", MAXRBUF);
-        delete (dp);
-        return nullptr;
-    }
-
-    device_name = valuXMLAtt(ap);
-
-    dp->setMediator(parent);
-    dp->setDeviceName(device_name);
-
-    cDevices.push_back(dp);
-
-    parent->newDevice(dp);
-
-    /* ok */
-    return dp;
-}
-
-INDI::BaseDevice *BaseClientPrivate::findDev(XMLEle *root, int create, char *errmsg)
-{
-    XMLAtt *ap;
-    INDI::BaseDevice *dp;
-    char *dn;
-
-    /* get device name */
-    ap = findXMLAtt(root, "device");
-    if (!ap)
-    {
-        snprintf(errmsg, MAXRBUF, "No device attribute found in element %s", tagXMLEle(root));
-        return (nullptr);
-    }
-
-    dn = valuXMLAtt(ap);
-
-    if (*dn == '\0')
-    {
-        snprintf(errmsg, MAXRBUF, "Device name is empty! %s", tagXMLEle(root));
-        return (nullptr);
-    }
-
-    dp = findDev(dn, errmsg);
-
-    if (dp)
-        return dp;
-
-    /* not found, create if ok */
-    if (create)
-        return (addDevice(root, errmsg));
-
-    snprintf(errmsg, MAXRBUF, "INDI: <%s> no such device %s", tagXMLEle(root), dn);
-    return nullptr;
+        return removeDevice(dp->getDeviceName(), errmsg);
 }
 
 /* a general message command received from the device.
  * return 0 if ok, else -1 with reason in errmsg[].
  */
-int BaseClientPrivate::messageCmd(XMLEle *root, char *errmsg)
+int BaseClientPrivate::messageCommand(XMLEle *root, char *errmsg)
 {
-    INDI::BaseDevice *dp = findDev(root, 0, errmsg);
+    INDI::BaseDevice *dp = findDevice(root, false, errmsg);
 
-    if (dp)
+    if (dp != nullptr)
         dp->checkMessage(root);
     else
     {
@@ -772,13 +661,76 @@ int BaseClientPrivate::messageCmd(XMLEle *root, char *errmsg)
     return (0);
 }
 
+int BaseClientPrivate::removeDevice(const char *devName, char *errmsg)
+{
+    auto it = listOfDevices.findByName(devName);
+    if (it == listOfDevices.end())
+    {
+        snprintf(errmsg, MAXRBUF, "Device %s not found", devName);
+        return INDI_DEVICE_NOT_FOUND;
+    }
+
+    parent->removeDevice(&*it); // Mediator
+    listOfDevices.erase(it);
+    return 0;
+}
+
+/* add new device */
+INDI::BaseDevice *BaseClientPrivate::addDevice(XMLEle *dep, char *errmsg)
+{
+    /* allocate new INDI::BaseDriver */
+    XMLAtt *ap = findXMLAtt(dep, "device");
+    if (!ap)
+    {
+        strncpy(errmsg, "Unable to find device attribute in XML element. Cannot add device.", MAXRBUF);
+        return nullptr;
+    }
+
+    char *deviceName = valuXMLAtt(ap);
+
+    auto &newDevice = listOfDevices.addDevice(deviceName, parent);
+
+    parent->newDevice(&newDevice); // Mediator
+
+    /* ok */
+    return &newDevice;
+}
+
+INDI::BaseDevice *BaseClientPrivate::findDevice(XMLEle *root, bool create, char *errmsg)
+{
+    /* get device name */
+    XMLAtt *ap = findXMLAtt(root, "device");
+    if (!ap)
+    {
+        snprintf(errmsg, MAXRBUF, "No device attribute found in element %s", tagXMLEle(root));
+        return (nullptr);
+    }
+
+    char *dn = valuXMLAtt(ap);
+    if (*dn == '\0')
+    {
+        snprintf(errmsg, MAXRBUF, "Device name is empty! %s", tagXMLEle(root));
+        return (nullptr);
+    }
+
+    auto dp = listOfDevices.findByName(dn);
+    if (dp != listOfDevices.end())
+        return &*dp;
+
+    /* not found, create if ok */
+    if (create)
+        return addDevice(root, errmsg);
+
+    snprintf(errmsg, MAXRBUF, "INDI: <%s> no such device %s", tagXMLEle(root), dn);
+    return nullptr;
+}
 
 BLOBMode *INDI::BaseClientPrivate::findBLOBMode(const std::string &device, const std::string &property)
 {
     for (auto &blob : blobModes)
     {
-        if (blob->device == device && (property.empty() || blob->property == property))
-            return blob;
+        if (blob.device == device && (property.empty() || blob.property == property))
+            return &blob;
     }
 
     return nullptr;
@@ -786,8 +738,7 @@ BLOBMode *INDI::BaseClientPrivate::findBLOBMode(const std::string &device, const
 
 void BaseClientPrivate::setDriverConnection(bool status, const char *deviceName)
 {
-    INDI::BaseDevice *drv                 = parent->getDevice(deviceName);
-    ISwitchVectorProperty *drv_connection = nullptr;
+    auto drv = parent->getDevice(deviceName);
 
     if (drv == nullptr)
     {
@@ -795,7 +746,7 @@ void BaseClientPrivate::setDriverConnection(bool status, const char *deviceName)
         return;
     }
 
-    drv_connection = drv->getSwitch(INDI::SP::CONNECTION);
+    auto drv_connection = drv->getSwitch(INDI::SP::CONNECTION);
 
     if (drv_connection == nullptr)
         return;
@@ -804,26 +755,26 @@ void BaseClientPrivate::setDriverConnection(bool status, const char *deviceName)
     if (status)
     {
         // If there is no need to do anything, i.e. already connected.
-        if (drv_connection->sp[0].s == ISS_ON)
+        if (drv_connection->at(0)->getState() == ISS_ON)
             return;
 
-        IUResetSwitch(drv_connection);
-        drv_connection->s       = IPS_BUSY;
-        drv_connection->sp[0].s = ISS_ON;
-        drv_connection->sp[1].s = ISS_OFF;
+        drv_connection->reset();
+        drv_connection->setState(IPS_BUSY);
+        drv_connection->at(0)->setState(ISS_ON);
+        drv_connection->at(1)->setState(ISS_OFF);
 
         parent->sendNewSwitch(drv_connection);
     }
     else
     {
         // If there is no need to do anything, i.e. already disconnected.
-        if (drv_connection->sp[1].s == ISS_ON)
+        if (drv_connection->at(1)->getState() == ISS_ON)
             return;
 
-        IUResetSwitch(drv_connection);
-        drv_connection->s       = IPS_BUSY;
-        drv_connection->sp[0].s = ISS_OFF;
-        drv_connection->sp[1].s = ISS_ON;
+        drv_connection->reset();
+        drv_connection->setState(IPS_BUSY);
+        drv_connection->at(0)->setState(ISS_OFF);
+        drv_connection->at(1)->setState(ISS_ON);
 
         parent->sendNewSwitch(drv_connection);
     }
@@ -836,9 +787,7 @@ INDI::BaseClient::BaseClient()
 { }
 
 INDI::BaseClient::~BaseClient()
-{
-
-}
+{ }
 
 void INDI::BaseClient::setVerbose(bool enable)
 {
@@ -869,12 +818,7 @@ void INDI::BaseClient::setServer(const char *hostname, unsigned int port)
 void INDI::BaseClient::watchDevice(const char *deviceName)
 {
     D_PTR(BaseClient);
-    // Watch for duplicates. Should have used std::set from the beginning but let's
-    // avoid changing API now.
-    if (std::find(d->cDeviceNames.begin(), d->cDeviceNames.end(), deviceName) != d->cDeviceNames.end())
-        return;
-
-    d->cDeviceNames.emplace_back(deviceName);
+    d->cDeviceNames.insert(deviceName);
 }
 
 void INDI::BaseClient::watchProperty(const char *deviceName, const char *propertyName)
@@ -923,18 +867,23 @@ void INDI::BaseClient::disconnectDevice(const char *deviceName)
 INDI::BaseDevice *INDI::BaseClient::getDevice(const char *deviceName)
 {
     D_PTR(BaseClient);
-    for (auto &device : d->cDevices)
-    {
-        if (!strcmp(deviceName, device->getDeviceName()))
-            return device;
-    }
-    return nullptr;
+    auto it = d->listOfDevices.findByName(deviceName);
+    if (it == d->listOfDevices.end())
+        return nullptr;
+
+    return &*it;
 }
 
-const std::vector<INDI::BaseDevice *> &INDI::BaseClient::getDevices() const
+const std::vector<INDI::BaseDevice *> INDI::BaseClient::getDevices() const
 {
     D_PTR(const BaseClient);
-    return d->cDevices;
+    std::vector<INDI::BaseDevice *> result;
+    result.reserve(d->listOfDevices.size());
+    for (auto &it: d->listOfDevices)
+    {
+        result.push_back(const_cast<INDI::BaseDevice *>(&it));
+    }
+    return result;
 }
 
 const char *INDI::BaseClient::getHost() const
@@ -963,22 +912,22 @@ void INDI::BaseClient::sendNewText(ITextVectorProperty *tvp)
 void INDI::BaseClient::sendNewText(const char *deviceName, const char *propertyName, const char *elementName,
                                    const char *text)
 {
-    INDI::BaseDevice *drv = getDevice(deviceName);
+    auto drv = getDevice(deviceName);
 
     if (drv == nullptr)
         return;
 
-    ITextVectorProperty *tvp = drv->getText(propertyName);
+    auto tvp = drv->getText(propertyName);
 
     if (tvp == nullptr)
         return;
 
-    IText *tp = IUFindText(tvp, elementName);
+    auto tp = tvp->findWidgetByName(elementName);
 
     if (tp == nullptr)
         return;
 
-    IUSaveText(tp, text);
+    tp->setText(text);
 
     sendNewText(tvp);
 }
@@ -992,22 +941,22 @@ void INDI::BaseClient::sendNewNumber(INumberVectorProperty *nvp)
 void INDI::BaseClient::sendNewNumber(const char *deviceName, const char *propertyName, const char *elementName,
                                      double value)
 {
-    INDI::BaseDevice *drv = getDevice(deviceName);
+    auto drv = getDevice(deviceName);
 
     if (drv == nullptr)
         return;
 
-    INumberVectorProperty *nvp = drv->getNumber(propertyName);
+    auto nvp = drv->getNumber(propertyName);
 
     if (nvp == nullptr)
         return;
 
-    INumber *np = IUFindNumber(nvp, elementName);
+    auto np = nvp->findWidgetByName(elementName);
 
     if (np == nullptr)
         return;
 
-    np->value = value;
+    np->setValue(value);
 
     sendNewNumber(nvp);
 }
@@ -1020,22 +969,22 @@ void INDI::BaseClient::sendNewSwitch(ISwitchVectorProperty *svp)
 
 void INDI::BaseClient::sendNewSwitch(const char *deviceName, const char *propertyName, const char *elementName)
 {
-    INDI::BaseDevice *drv = getDevice(deviceName);
+    auto drv = getDevice(deviceName);
 
     if (drv == nullptr)
         return;
 
-    ISwitchVectorProperty *svp = drv->getSwitch(propertyName);
+    auto svp = drv->getSwitch(propertyName);
 
     if (svp == nullptr)
         return;
 
-    ISwitch *sp = IUFindSwitch(svp, elementName);
+    auto sp = svp->findWidgetByName(elementName);
 
     if (sp == nullptr)
         return;
 
-    sp->s = ISS_ON;
+    sp->setState(ISS_ON);
 
     sendNewSwitch(svp);
 }
@@ -1077,11 +1026,11 @@ void INDI::BaseClient::setBLOBMode(BLOBHandling blobH, const char *dev, const ch
 
     if (bMode == nullptr)
     {
-        BLOBMode *newMode = new BLOBMode();
-        newMode->device   = std::string(dev);
-        newMode->property = (prop ? std::string(prop) : std::string());
-        newMode->blobMode = blobH;
-        d->blobModes.push_back(newMode);
+        BLOBMode newMode;
+        newMode.device   = std::string(dev);
+        newMode.property = (prop ? std::string(prop) : std::string());
+        newMode.blobMode = blobH;
+        d->blobModes.push_back(std::move(newMode));
     }
     else
     {
@@ -1108,14 +1057,16 @@ BLOBHandling INDI::BaseClient::getBLOBMode(const char *dev, const char *prop)
     return bHandle;
 }
 
-bool INDI::BaseClient::getDevices(std::vector<INDI::BaseDevice *> &deviceList, uint16_t driverInterface )
+#if 0
+bool INDI::BaseClient::getDevices(std::vector<INDI::BaseDevice *> &deviceList, uint16_t driverInterface)
 {
     D_PTR(BaseClient);
-    for (INDI::BaseDevice *device : d->cDevices)
+    for (auto &device : d->listOfDevices)
     {
-        if (device->getDriverInterface() & driverInterface)
-            deviceList.push_back(device);
+        if (device.getDriverInterface() & driverInterface)
+            deviceList.push_back(&device);
     }
 
     return (deviceList.size() > 0);
 }
+#endif

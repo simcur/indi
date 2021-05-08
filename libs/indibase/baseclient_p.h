@@ -10,7 +10,11 @@
 #include <thread>
 #include <cstdint>
 
+#include <list>
+#include <algorithm>
+
 #include <lilxml.h>
+#include "basedevice.h"
 
 #ifdef _WINDOWS
 #include <WinSock2.h>
@@ -23,7 +27,48 @@ typedef SSIZE_T ssize_t;
 namespace INDI
 {
 
-class BaseDevice;
+// #PS: Temporary implementation of BaseDeviceList.
+class BaseDeviceList: public std::list<INDI::BaseDevice>
+{
+public:
+    std::list<BaseDevice>::iterator findByName(const char *name)
+    {
+        return std::find_if(begin(), end(), [name](const INDI::BaseDevice &it)
+        {
+            return it.getDeviceNameAsString() == name;
+        });
+    }
+
+    std::list<BaseDevice>::iterator findByName(const std::string &name)
+    {
+        return findByName(name.c_str());
+    }
+
+    BaseDevice &addDevice(const char *name, INDI::BaseMediator *mediator)
+    {
+        emplace_back();
+        auto &it = back();
+        it.setDeviceName(name);
+        it.setMediator(mediator);
+        return it;
+    }
+
+    bool removeByName(const char *name)
+    {
+        auto it = findByName(name);
+        if (it == end())
+            return false;
+
+        erase(it);
+
+        return true;
+    }
+
+    bool removeByName(const std::string &name)
+    {
+        return removeByName(name.c_str());
+    }
+};
 
 struct BLOBMode
 {
@@ -64,21 +109,22 @@ public:
     /** @brief Dispatch command received from INDI server to respective devices handled by the client */
     int dispatchCommand(XMLEle *root, char *errmsg);
 
-    /** @brief Remove device */
-    int deleteDevice(const char *devName, char *errmsg);
-
     /** @brief Delete property command */
-    int delPropertyCmd(XMLEle *root, char *errmsg);
+    int delPropertyCommand(XMLEle *root, char *errmsg);
 
-    /** @brief Find and return a particular device */
-    INDI::BaseDevice *findDev(const char *devName, char *errmsg);
+    /** @brief  Process messages */
+    int messageCommand(XMLEle *root, char *errmsg);
+
+public:
+    /** @brief Remove device from list */
+    int removeDevice(const char *devName, char *errmsg);
+
+
     /** @brief Add a new device */
     INDI::BaseDevice *addDevice(XMLEle *dep, char *errmsg);
     /** @brief Find a device, and if it doesn't exist, create it if create is set to 1 */
-    INDI::BaseDevice *findDev(XMLEle *root, int create, char *errmsg);
+    INDI::BaseDevice *findDevice(XMLEle *root, bool create, char *errmsg);
 
-    /**  Process messages */
-    int messageCmd(XMLEle *root, char *errmsg);
 
 public:
     BaseClient *parent;
@@ -91,9 +137,10 @@ public:
     int sendFd {-1};
 #endif
 
-    std::vector<INDI::BaseDevice *> cDevices;
-    std::vector<std::string> cDeviceNames;
-    std::vector<BLOBMode *> blobModes;
+    BaseDeviceList listOfDevices;
+
+    std::set<std::string> cDeviceNames;
+    std::list<BLOBMode> blobModes;
     std::map<std::string, std::set<std::string>> cWatchProperties;
 
     std::string cServer;

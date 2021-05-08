@@ -146,7 +146,8 @@ class INDI::BaseClient : public INDI::BaseMediator
         INDI::BaseDevice *getDevice(const char *deviceName);
 
         /** @returns Returns a vector of all devices created in the client. */
-        const std::vector<INDI::BaseDevice *> &getDevices() const;
+        //const std::vector<INDI::BaseDevice *> &getDevices() const;
+        const std::vector<INDI::BaseDevice *> getDevices() const; // backward compatibile
 
         /** @brief getDevices Returns list of devices that belong to a particular @ref INDI::BaseDevice::DRIVER_INTERFACE "DRIVER_INTERFACE" class.
          *
@@ -161,7 +162,8 @@ class INDI::BaseClient : public INDI::BaseMediator
          *  @param driverInterface ORed DRIVER_INTERFACE values to select the desired class of devices.
          *  @return True if one or more devices are found for the supplied driverInterface, false if no matching devices found.
          */
-        bool getDevices(std::vector<INDI::BaseDevice *> &deviceList, uint16_t driverInterface);
+        // #PS: Is it needed somewhere?
+        // bool getDevices(std::vector<INDI::BaseDevice *> &deviceList, uint16_t driverInterface);
 
     public:
         /** @brief Set Binary Large Object policy mode
