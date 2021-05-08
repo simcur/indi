@@ -191,6 +191,7 @@ public:
 
     /** \return Returns the device name */
     const char *getDeviceName() const;
+    const std::string &getDeviceNameAsString() const;
 
     /** \return driver name
      *  \note This can only be valid if DRIVER_INFO is defined by the driver.

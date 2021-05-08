@@ -816,6 +816,12 @@ const char *BaseDevice::getDeviceName() const
     return d->deviceName.data();
 }
 
+const std::string &BaseDevice::getDeviceNameAsString() const
+{
+    D_PTR(const BaseDevice);
+    return d->deviceName;
+}
+
 /* add message to queue
  * N.B. don't put carriage control in msg, we take care of that.
  */
