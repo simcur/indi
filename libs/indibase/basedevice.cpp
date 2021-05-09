@@ -25,6 +25,12 @@
 #include "indistandardproperty.h"
 #include "locale_compat.h"
 
+#include "indipropertynumber.h"
+#include "indipropertylight.h"
+#include "indipropertyswitch.h"
+#include "indipropertyblob.h"
+#include "indipropertytext.h"
+
 #include <cerrno>
 #include <cassert>
 #include <cstdlib>
@@ -247,7 +253,6 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
     char *rtag, *rname, *rdev;
 
     INDI::Property indiProp;
-    int n = 0;
 
     rtag = tagXMLEle(root);
 
@@ -277,9 +282,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
     {
         AutoCNumeric locale;
 
-        INumberVectorProperty *nvp = new INumberVectorProperty;
-
-        INumber *np = nullptr;
+        INDI::PropertyNumber nvp {0};
 
         /* pull out each name/value pair */
         for (ep = nextXMLEle(root, 1); ep != nullptr; ep = nextXMLEle(root, 0))
@@ -287,51 +290,43 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
             if (strcmp(tagXMLEle(ep), "defNumber"))
                 continue;
 
-            np = static_cast<INumber *>(realloc(np, (n + 1) * sizeof(INumber)));
-            INumber *it = &np[n];
-            memset(it, 0, sizeof(*it));
-            it->nvp = nvp;
+            INDI::WidgetNumber widget;
 
-            strncpy(it->name, findXMLAttValu(ep, "name"), MAXINDINAME);
-            if (*it->name == '\0')
+            widget.setName(findXMLAttValu(ep, "name"));
+            if (*widget.getName() == '\0')
                 continue;
 
-            if (f_scansexa(pcdataXMLEle(ep), &(it->value)) < 0)
+            double value;
+            if (f_scansexa(pcdataXMLEle(ep), &value) < 0)
             {
                 IDLog("%s: Bad format %s\n", rname, pcdataXMLEle(ep));
                 continue;
             }
 
-            strncpy(it->label,  findXMLAttValu(ep, "label" ), MAXINDILABEL );
-            strncpy(it->format, findXMLAttValu(ep, "format"), MAXINDIFORMAT);
+            widget.setValue(value);
+            widget.setLabel(findXMLAttValu(ep, "label"));
+            widget.setFormat(findXMLAttValu(ep, "format"));
+            widget.setMin(atof(findXMLAttValu(ep, "min")));
+            widget.setMax(atof(findXMLAttValu(ep, "max")));
+            widget.setStep(atof(findXMLAttValu(ep, "step")));
 
-            it->min  = atof(findXMLAttValu(ep, "min"));
-            it->max  = atof(findXMLAttValu(ep, "max"));
-            it->step = atof(findXMLAttValu(ep, "step"));
-            ++n;
+            nvp.push(std::move(widget));
         }
 
-        if (n > 0)
-        {
-            nvp->nnp = n;
-            nvp->np  = np;
-            indiProp = INDI::Property(nvp);
-        }
+        if (!nvp.isEmpty())
+            indiProp = nvp;
         else
-        {
             IDLog("%s: newNumberVector with no valid members\n", rname);
-            delete (nvp);
-            free (np);
-        }
     }
     else if (!strcmp(rtag, "defSwitchVector"))
     {
-        ISwitchVectorProperty *svp = new ISwitchVectorProperty;
+        INDI::PropertySwitch svp {0};
 
-        ISwitch *sp = nullptr;
+        ISRule rule;
+        if (crackISRule(findXMLAttValu(root, "rule"), &rule) < 0)
+            rule = ISR_1OFMANY;
 
-        if (crackISRule(findXMLAttValu(root, "rule"), (&svp->r)) < 0)
-            svp->r = ISR_1OFMANY;
+        svp.setRule(rule);
 
         /* pull out each name/value pair */
         for (ep = nextXMLEle(root, 1); ep != nullptr; ep = nextXMLEle(root, 0))
@@ -339,39 +334,29 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
             if (strcmp(tagXMLEle(ep), "defSwitch"))
                 continue;
 
-            sp = static_cast<ISwitch *>(realloc(sp, (n + 1) * sizeof(ISwitch)));
-            ISwitch *it = &sp[n];
-            memset(it, 0, sizeof(*it));
-            it->svp = svp;
+            INDI::WidgetSwitch widget;
 
-            strncpy(it->name, findXMLAttValu(ep, "name"), MAXINDINAME);
-            if (*it->name == '\0')
+            widget.setName(findXMLAttValu(ep, "name"));
+            if (*widget.getName() == '\0')
                 continue;
 
-            crackISState(pcdataXMLEle(ep), &(it->s));
+            ISState state;
+            crackISState(pcdataXMLEle(ep), &state);
+            widget.setState(state);
+            widget.setLabel(findXMLAttValu(ep, "label"));
 
-            strncpy(it->label, findXMLAttValu(ep, "label"), MAXINDILABEL);
-            ++n;
+            svp.push(std::move(widget));
         }
 
-        if (n > 0)
-        {
-            svp->nsp = n;
-            svp->sp  = sp;
-            indiProp = INDI::Property(svp);
-        }
+        if (!svp.isEmpty())
+            indiProp = svp;
         else
-        {
             IDLog("%s: newSwitchVector with no valid members\n", rname);
-            delete (svp);
-            free (sp);
-        }
     }
 
     else if (!strcmp(rtag, "defTextVector"))
     {
-        ITextVectorProperty *tvp = new ITextVectorProperty;
-        IText *tp                = nullptr;
+        INDI::PropertyText tvp {0};
 
         // pull out each name/value pair
         for (ep = nextXMLEle(root, 1); ep != nullptr; ep = nextXMLEle(root, 0))
@@ -379,39 +364,27 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
             if (strcmp(tagXMLEle(ep), "defText"))
                 continue;
 
-            tp = static_cast<IText *>(realloc(tp, (n + 1) * sizeof(IText)));
-            memset(&tp[n], 0, sizeof(tp[n]));
+            INDI::WidgetText widget;
 
-            WidgetView<IText> *it = static_cast<WidgetView<IText>*>(&tp[n]);
+            widget.setName(findXMLAttValu(ep, "name"));
 
-            it->setParent(tvp);
-            it->setName(findXMLAttValu(ep, "name"));
-
-            if (it->getName()[0] == '\0')
+            if (*widget.getName() == '\0')
                 continue;
 
-            it->setText(pcdataXMLEle(ep), pcdatalenXMLEle(ep));
-            it->setLabel(findXMLAttValu(ep, "label"));
-            ++n;
+            widget.setText(pcdataXMLEle(ep), pcdatalenXMLEle(ep));
+            widget.setLabel(findXMLAttValu(ep, "label"));
+
+            tvp.push(std::move(widget));
         }
 
-        if (n > 0)
-        {
-            tvp->ntp = n;
-            tvp->tp  = tp;
-            indiProp = INDI::Property(tvp);
-        }
+        if (!tvp.isEmpty())
+            indiProp = tvp;
         else
-        {
             IDLog("%s: newTextVector with no valid members\n", rname);
-            delete (tvp);
-            free (tp);
-        }
     }
     else if (!strcmp(rtag, "defLightVector"))
     {
-        ILightVectorProperty *lvp = new ILightVectorProperty;
-        ILight *lp                = nullptr;
+        INDI::PropertyLight lvp {0};
 
         /* pull out each name/value pair */
         for (ep = nextXMLEle(root, 1); ep != nullptr; ep = nextXMLEle(root, 0))
@@ -419,71 +392,52 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
             if (strcmp(tagXMLEle(ep), "defLight"))
                 continue;
 
-            lp = static_cast<ILight *>(realloc(lp, (n + 1) * sizeof(ILight)));
-            ILight *it = &lp[n];
-            memset(it, 0, sizeof(*it));
-            it->lvp = lvp;
+            INDI::WidgetLight widget;
 
-            strncpy(it->name, findXMLAttValu(ep, "name"), MAXINDINAME);
-            if (*it->name == '\0')
+            widget.setName(findXMLAttValu(ep, "name"));
+            if (*widget.getName() == '\0')
                 continue;
 
-            crackIPState(pcdataXMLEle(ep), &(it->s));
+            IPState state;
+            crackIPState(pcdataXMLEle(ep), &state);
+            widget.setState(state);
+            widget.setLabel(findXMLAttValu(ep, "label"));
 
-            strncpy(it->label, findXMLAttValu(ep, "label"), MAXINDILABEL);
-            ++n;
+            lvp.push(std::move(widget));
         }
 
-        if (n > 0)
-        {
-            lvp->nlp = n;
-            lvp->lp  = lp;
-            indiProp = INDI::Property(lvp);
-        }
+        if (!lvp.isEmpty())
+            indiProp = lvp;
         else
-        {
             IDLog("%s: newLightVector with no valid members\n", rname);
-            delete (lvp);
-            free (lp);
-        }
     }
     else if (!strcmp(rtag, "defBLOBVector"))
     {
-        IBLOBVectorProperty *bvp = new IBLOBVectorProperty;
-        IBLOB *bp                = nullptr;
+        INDI::PropertyBlob bvp {0};
 
         /* pull out each name/value pair */
-        for (n = 0, ep = nextXMLEle(root, 1); ep != nullptr; ep = nextXMLEle(root, 0))
+        for (ep = nextXMLEle(root, 1); ep != nullptr; ep = nextXMLEle(root, 0))
         {
             if (strcmp(tagXMLEle(ep), "defBLOB"))
                 continue;
 
-            bp = static_cast<IBLOB *>(realloc(bp, (n + 1) * sizeof(IBLOB)));
-            IBLOB *it = &bp[n];
-            memset(it, 0, sizeof(*it));
-            it->bvp = bvp;
+            INDI::WidgetBlob widget;
 
-            strncpy(it->name, findXMLAttValu(ep, "name"), MAXINDINAME);
-            if (*it->name == '\0')
+            widget.setName(findXMLAttValu(ep, "name"));
+
+            if (*widget.getName() == '\0')
                 continue;
 
-            strncpy(it->label,  findXMLAttValu(ep, "label" ), MAXINDILABEL );
-            strncpy(it->format, findXMLAttValu(ep, "format"), MAXINDIBLOBFMT);
-            ++n;
+            widget.setLabel(findXMLAttValu(ep, "label"));
+            widget.setFormat(findXMLAttValu(ep, "format"));
+
+            bvp.push(std::move(widget));
         }
 
-        if (n > 0)
-        {
-            bvp->nbp = n;
-            bvp->bp  = bp;
-            indiProp = INDI::Property(bvp);
-        }
+        if (!bvp.isEmpty())
+            indiProp = bvp;
         else
-        {
             IDLog("%s: newBLOBVector with no valid members\n", rname);
-            delete (bvp);
-            free (bp);
-        }
     }
 
     if (indiProp.isValid())
