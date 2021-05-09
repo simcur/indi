@@ -155,8 +155,8 @@ public:
     Property getProperty(const char *name, INDI_PROPERTY_TYPE type = INDI_UNKNOWN) const;
 
     /** @brief Return a list of all properties in the device. */
-    Properties *getProperties();
-    const Properties *getProperties() const;
+    Properties getProperties();
+    const Properties getProperties() const;
 
 public:
     /** @brief Add message to the driver's message queue.

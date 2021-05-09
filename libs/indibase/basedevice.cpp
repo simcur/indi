@@ -100,7 +100,7 @@ INDI::PropertyView<IBLOB> *BaseDevice::getBLOB(const char *name) const
 
 IPState BaseDevice::getPropertyState(const char *name) const
 {
-    for (const auto &oneProp : *getProperties())
+    for (const auto &oneProp : getProperties())
         if (!strcmp(name, oneProp.getName()))
             return oneProp.getState();
 
@@ -109,7 +109,7 @@ IPState BaseDevice::getPropertyState(const char *name) const
 
 IPerm BaseDevice::getPropertyPermission(const char *name) const
 {
-    for (const auto &oneProp : *getProperties())
+    for (const auto &oneProp : getProperties())
         if (!strcmp(name, oneProp.getName()))
             return oneProp.getPermission();
 
@@ -127,7 +127,7 @@ INDI::Property BaseDevice::getProperty(const char *name, INDI_PROPERTY_TYPE type
     D_PTR(const BaseDevice);
     std::lock_guard<std::mutex> lock(d->m_Lock);
 
-    for (const auto &oneProp : *getProperties())
+    for (const auto &oneProp : getProperties())
     {
         if (type != oneProp.getType() && type != INDI_UNKNOWN)
             continue;
@@ -1013,16 +1013,16 @@ uint16_t BaseDevice::getDriverInterface()
     return 0;
 }
 
-const BaseDevice::Properties *BaseDevice::getProperties() const
+const BaseDevice::Properties BaseDevice::getProperties() const
 {
     D_PTR(const BaseDevice);
-    return &d->pAll;
+    return d->pAll;
 }
 
-BaseDevice::Properties *BaseDevice::getProperties()
+BaseDevice::Properties BaseDevice::getProperties()
 {
     D_PTR(BaseDevice);
-    return &d->pAll;
+    return d->pAll;
 }
 
 void BaseDevice::setMediator(INDI::BaseMediator *mediator)

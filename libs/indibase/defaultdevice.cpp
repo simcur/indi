@@ -183,7 +183,7 @@ bool DefaultDevice::saveConfigItems(FILE *fp)
 
 bool DefaultDevice::saveAllConfigItems(FILE *fp)
 {
-    for (const auto &oneProperty : *getProperties())
+    for (const auto &oneProperty : getProperties())
     {
         if (oneProperty.getType() == INDI_SWITCH)
         {
@@ -767,7 +767,7 @@ void DefaultDevice::ISGetProperties(const char *dev)
             d->DriverInfoTP.setGroupName(INFO_TAB);
     }
 
-    for (const auto &oneProperty : *getProperties())
+    for (const auto &oneProperty : getProperties())
     {
         if (d->defineDynamicProperties == false && oneProperty.isDynamic())
             continue;
@@ -832,7 +832,7 @@ void DefaultDevice::ISGetProperties(const char *dev)
 
 void DefaultDevice::resetProperties()
 {
-    for (auto &oneProperty : *getProperties())
+    for (auto &oneProperty : getProperties())
     {
         oneProperty.setState(IPS_IDLE);
         oneProperty.apply();

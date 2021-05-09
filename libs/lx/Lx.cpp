@@ -561,7 +561,7 @@ int Lx::stopLxSerial()
 
 INDI::Property Lx::findbyLabel(INDI::DefaultDevice *dev, const char *label)
 {
-    for(const auto &oneProperty: *dev->getProperties())
+    for(const auto &oneProperty: dev->getProperties())
         if (oneProperty.isLabelMatch(label))
             return oneProperty;
     return INDI::Property();
