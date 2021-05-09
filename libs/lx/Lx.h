@@ -72,7 +72,7 @@ class Lx
     int stopLxSerial();
     void getSerialOptions(unsigned int *speed, unsigned int *wordsize, unsigned int *parity, unsigned int *stops);
     const char *getSerialEOL();
-    INDI::Property *findbyLabel(INDI::DefaultDevice *dev, char *label);
+    INDI::Property findbyLabel(INDI::DefaultDevice *dev, const char *label);
     // PWC Cameras
     ISwitchVectorProperty *FlashStrobeSP;
     ISwitchVectorProperty *FlashStrobeStopSP;

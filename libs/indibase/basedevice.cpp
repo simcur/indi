@@ -60,11 +60,6 @@ BaseDevicePrivate::BaseDevicePrivate()
 BaseDevicePrivate::~BaseDevicePrivate()
 {
     delLilXML(lp);
-    while (!pAll.empty())
-    {
-        delete pAll.back();
-        pAll.pop_back();
-    }
 }
 
 BaseDevice::BaseDevice()
@@ -106,8 +101,8 @@ INDI::PropertyView<IBLOB> *BaseDevice::getBLOB(const char *name) const
 IPState BaseDevice::getPropertyState(const char *name) const
 {
     for (const auto &oneProp : *getProperties())
-        if (!strcmp(name, oneProp->getName()))
-            return oneProp->getState();
+        if (!strcmp(name, oneProp.getName()))
+            return oneProp.getState();
 
     return IPS_IDLE;
 }
@@ -115,8 +110,8 @@ IPState BaseDevice::getPropertyState(const char *name) const
 IPerm BaseDevice::getPropertyPermission(const char *name) const
 {
     for (const auto &oneProp : *getProperties())
-        if (!strcmp(name, oneProp->getName()))
-            return oneProp->getPermission();
+        if (!strcmp(name, oneProp.getName()))
+            return oneProp.getPermission();
 
     return IP_RO;
 }
@@ -134,14 +129,14 @@ INDI::Property BaseDevice::getProperty(const char *name, INDI_PROPERTY_TYPE type
 
     for (const auto &oneProp : *getProperties())
     {
-        if (type != oneProp->getType() && type != INDI_UNKNOWN)
+        if (type != oneProp.getType() && type != INDI_UNKNOWN)
             continue;
 
-        if (!oneProp->getRegistered())
+        if (!oneProp.getRegistered())
             continue;
 
-        if (!strcmp(name, oneProp->getName()))
-            return *oneProp;
+        if (!strcmp(name, oneProp.getName()))
+            return oneProp;
     }
 
     return INDI::Property();
@@ -152,24 +147,15 @@ int BaseDevice::removeProperty(const char *name, char *errmsg)
     D_PTR(BaseDevice);
     std::lock_guard<std::mutex> lock(d->m_Lock);
 
-    for (auto oneProp : d->pAll)
+    auto it = std::find_if(d->pAll.begin(), d->pAll.end(), [name](const INDI::Property &it)
     {
-        if (!strcmp(name, oneProp->getName()))
-        {
-            d->pAll.erase(std::remove(d->pAll.begin(), d->pAll.end(), oneProp), d->pAll.end());
-            // JM 2021-04-28: delete later. We perform the actual delete after 100ms to give clients a chance to remove the object.
-            // This is necessary when rapid define-delete-define sequences are made.
-            // This HACK is not ideal. We need to start using std::shared_ptr for this purpose soon, but this will be a major change to the
-            // interface. Perhaps for INDI 2.0
-            std::thread t([oneProp]()
-            {
+        return it.isNameMatch(name);
+    });
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                delete oneProp;
-            });
-            t.detach();
-            return 0;
-        }
+    if (it != d->pAll.end())
+    {
+        d->pAll.erase(it);
+        return 0;
     }
 
     snprintf(errmsg, MAXRBUF, "Error: Property %s not found in device %s.", name, getDeviceName());
@@ -260,7 +246,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
     XMLEle *ep    = nullptr;
     char *rtag, *rname, *rdev;
 
-    INDI::Property *indiProp = nullptr;
+    INDI::Property indiProp;
     int n = 0;
 
     rtag = tagXMLEle(root);
@@ -329,8 +315,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
         {
             nvp->nnp = n;
             nvp->np  = np;
-
-            indiProp = new INDI::Property(nvp);
+            indiProp = INDI::Property(nvp);
         }
         else
         {
@@ -373,7 +358,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
         {
             svp->nsp = n;
             svp->sp  = sp;
-            indiProp = new INDI::Property(svp);
+            indiProp = INDI::Property(svp);
         }
         else
         {
@@ -414,8 +399,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
         {
             tvp->ntp = n;
             tvp->tp  = tp;
-
-            indiProp = new INDI::Property(tvp);
+            indiProp = INDI::Property(tvp);
         }
         else
         {
@@ -454,8 +438,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
         {
             lvp->nlp = n;
             lvp->lp  = lp;
-
-            indiProp  = new INDI::Property(lvp);
+            indiProp = INDI::Property(lvp);
         }
         else
         {
@@ -493,8 +476,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
         {
             bvp->nbp = n;
             bvp->bp  = bp;
-
-            indiProp  = new INDI::Property(bvp);
+            indiProp = INDI::Property(bvp);
         }
         else
         {
@@ -504,17 +486,17 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
         }
     }
 
-    if (indiProp)
+    if (indiProp.isValid())
     {
-        indiProp->setBaseDevice(this);
-        indiProp->setDynamic(true);
-        indiProp->setDeviceName(getDeviceName());
-        indiProp->setName(rname);
-        indiProp->setLabel(findXMLAttValu(root, "label"));
-        indiProp->setGroupName(findXMLAttValu(root, "group"));
-        indiProp->setPermission(perm);
-        indiProp->setState(state);
-        indiProp->setTimeout(atoi(findXMLAttValu(root, "timeout")));
+        indiProp.setBaseDevice(this);
+        indiProp.setDynamic(true);
+        indiProp.setDeviceName(getDeviceName());
+        indiProp.setName(rname);
+        indiProp.setLabel(findXMLAttValu(root, "label"));
+        indiProp.setGroupName(findXMLAttValu(root, "group"));
+        indiProp.setPermission(perm);
+        indiProp.setState(state);
+        indiProp.setTimeout(atoi(findXMLAttValu(root, "timeout")));
 
         std::unique_lock<std::mutex> lock(d->m_Lock);
         d->pAll.push_back(indiProp);
@@ -522,7 +504,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
 
         //IDLog("Adding number property %s to list.\n", indiProp->getName());
         if (d->mediator)
-            d->mediator->newProperty(indiProp);
+            d->mediator->newProperty(&indiProp);
     }
 
     return (0);
@@ -902,7 +884,7 @@ void BaseDevice::registerProperty(void *p, INDI_PROPERTY_TYPE type)
     else
     {
         std::lock_guard<std::mutex> lock(d->m_Lock);
-        d->pAll.push_back(new INDI::Property(p, type));
+        d->pAll.emplace_back(p, type);
     }
 }
 
@@ -920,7 +902,7 @@ void BaseDevice::registerProperty(INDI::Property &property)
     else
     {
         std::lock_guard<std::mutex> lock(d->m_Lock);
-        d->pAll.push_back(new INDI::Property(property));
+        d->pAll.push_back(property);
     }
 }
 

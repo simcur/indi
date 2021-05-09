@@ -185,9 +185,9 @@ bool DefaultDevice::saveAllConfigItems(FILE *fp)
 {
     for (const auto &oneProperty : *getProperties())
     {
-        if (oneProperty->getType() == INDI_SWITCH)
+        if (oneProperty.getType() == INDI_SWITCH)
         {
-            const auto &svp = oneProperty->getSwitch();
+            const auto &svp = oneProperty.getSwitch();
             /* Never save CONNECTION property. Don't save switches with no switches on if the rule is one of many */
             if (
                 (svp->isNameMatch(INDI::SP::CONNECTION)) ||
@@ -195,7 +195,7 @@ bool DefaultDevice::saveAllConfigItems(FILE *fp)
             )
                 continue;
         }
-        oneProperty->save(fp);
+        oneProperty.save(fp);
     }
     return true;
 }
@@ -769,10 +769,10 @@ void DefaultDevice::ISGetProperties(const char *dev)
 
     for (const auto &oneProperty : *getProperties())
     {
-        if (d->defineDynamicProperties == false && oneProperty->isDynamic())
+        if (d->defineDynamicProperties == false && oneProperty.isDynamic())
             continue;
 
-        oneProperty->define();
+        oneProperty.define();
     }
 
     // Remember debug & logging settings
@@ -832,10 +832,10 @@ void DefaultDevice::ISGetProperties(const char *dev)
 
 void DefaultDevice::resetProperties()
 {
-    for (const auto &oneProperty : *getProperties())
+    for (auto &oneProperty : *getProperties())
     {
-        oneProperty->setState(IPS_IDLE);
-        oneProperty->apply();
+        oneProperty.setState(IPS_IDLE);
+        oneProperty.apply();
     }
 }
 

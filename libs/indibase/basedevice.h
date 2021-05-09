@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <cstdint>
 
 // #define MAXRBUF 2048 // #PS: defined in indibase.h
@@ -45,8 +46,8 @@ class BaseDevice
 {
     DECLARE_PRIVATE(BaseDevice)
 public:
-    //typedef std::deque<INDI::Property> Properties; // future
-    typedef std::vector<INDI::Property*> Properties;
+    typedef std::deque<INDI::Property> Properties;
+    //typedef std::vector<INDI::Property*> Properties;
 
     /*! INDI error codes. */
     enum INDI_ERROR

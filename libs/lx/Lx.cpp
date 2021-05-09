@@ -107,7 +107,6 @@ bool Lx::updateProperties()
 {
     if (dev->isConnected())
     {
-        INDI::Property *pfound;
         dev->defineProperty(&LxEnableSP);
         dev->defineProperty(&LxModeSP);
         dev->defineProperty(&LxPortTP);
@@ -120,12 +119,12 @@ bool Lx::updateProperties()
         dev->defineProperty(&LxSerialParitySP);
         dev->defineProperty(&LxSerialStopSP);
         dev->defineProperty(&LxSerialAddeolSP);
-        pfound = findbyLabel(dev, (char *)"Strobe");
-        if (pfound)
+        auto pfound = findbyLabel(dev, "Strobe");
+        if (pfound.isValid())
         {
-            FlashStrobeSP     = dev->getSwitch(pfound->getName());
+            FlashStrobeSP     = dev->getSwitch(pfound.getName());
             pfound            = findbyLabel(dev, (char *)"Stop Strobe");
-            FlashStrobeStopSP = dev->getSwitch(pfound->getName());
+            FlashStrobeStopSP = dev->getSwitch(pfound.getName());
         }
     }
     else
@@ -560,12 +559,12 @@ int Lx::stopLxSerial()
     return 0;
 }
 
-INDI::Property *Lx::findbyLabel(INDI::DefaultDevice *dev, char *label)
+INDI::Property Lx::findbyLabel(INDI::DefaultDevice *dev, const char *label)
 {
     for(const auto &oneProperty: *dev->getProperties())
-        if (!strcmp(oneProperty->getLabel(), label))
+        if (oneProperty.isLabelMatch(label))
             return oneProperty;
-    return nullptr;
+    return INDI::Property();
 }
 
 // PWC Stuff
