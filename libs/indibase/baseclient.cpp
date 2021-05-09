@@ -594,8 +594,8 @@ int BaseClientPrivate::delPropertyCommand(XMLEle *root, char *errmsg)
     /* Delete property if it exists, otherwise, delete the whole device */
     if (ap)
     {
-        INDI::Property *rProp = dp->getProperty(valuXMLAtt(ap));
-        if (rProp == nullptr)
+        INDI::Property rProp = dp->getProperty(valuXMLAtt(ap));
+        if (!rProp.isValid())
         {
             // Silently ignore B_ONLY clients.
             if (blobModes.empty() || blobModes.front().blobMode == B_ONLY)
@@ -605,7 +605,7 @@ int BaseClientPrivate::delPropertyCommand(XMLEle *root, char *errmsg)
             return -1;
         }
         if (sConnected)
-            parent->removeProperty(rProp); // Mediator
+            parent->removeProperty(&rProp); // Mediator
         int errCode = dp->removeProperty(valuXMLAtt(ap), errmsg);
 
         return errCode;

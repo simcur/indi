@@ -123,11 +123,11 @@ IPerm BaseDevice::getPropertyPermission(const char *name) const
 
 void *BaseDevice::getRawProperty(const char *name, INDI_PROPERTY_TYPE type) const
 {
-    INDI::Property *prop = getProperty(name, type);
-    return prop != nullptr ? prop->getProperty() : nullptr;
+    INDI::Property prop = getProperty(name, type);
+    return prop.isValid() ? prop.getProperty() : nullptr;
 }
 
-INDI::Property *BaseDevice::getProperty(const char *name, INDI_PROPERTY_TYPE type) const
+INDI::Property BaseDevice::getProperty(const char *name, INDI_PROPERTY_TYPE type) const
 {
     D_PTR(const BaseDevice);
     std::lock_guard<std::mutex> lock(d->m_Lock);
@@ -141,10 +141,10 @@ INDI::Property *BaseDevice::getProperty(const char *name, INDI_PROPERTY_TYPE typ
             continue;
 
         if (!strcmp(name, oneProp->getName()))
-            return oneProp;
+            return *oneProp;
     }
 
-    return nullptr;
+    return INDI::Property();
 }
 
 int BaseDevice::removeProperty(const char *name, char *errmsg)
@@ -272,8 +272,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
     if (d->deviceName.empty())
         d->deviceName = rdev;
 
-    //if (getProperty(rname, type) != nullptr)
-    if (getProperty(rname) != nullptr)
+    if (getProperty(rname).isValid())
         return INDI_PROPERTY_DUPLICATED;
 
     if (strcmp(rtag, "defLightVector") && crackIPerm(findXMLAttValu(root, "perm"), &perm) < 0)
@@ -896,10 +895,10 @@ void BaseDevice::registerProperty(void *p, INDI_PROPERTY_TYPE type)
 
     const char *name = INDI::Property(p, type).getName();
 
-    INDI::Property *pContainer = getProperty(name, type);
+    INDI::Property pContainer = getProperty(name, type);
 
-    if (pContainer != nullptr)
-        pContainer->setRegistered(true);
+    if (pContainer.isValid())
+        pContainer.setRegistered(true);
     else
     {
         std::lock_guard<std::mutex> lock(d->m_Lock);
@@ -914,10 +913,10 @@ void BaseDevice::registerProperty(INDI::Property &property)
     if (property.getType() == INDI_UNKNOWN)
         return;
 
-    INDI::Property *pContainer = getProperty(property.getName(), property.getType());
+    INDI::Property pContainer = getProperty(property.getName(), property.getType());
 
-    if (pContainer != nullptr)
-        pContainer->setRegistered(true);
+    if (pContainer.isValid())
+        pContainer.setRegistered(true);
     else
     {
         std::lock_guard<std::mutex> lock(d->m_Lock);

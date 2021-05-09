@@ -967,8 +967,8 @@ bool DefaultDevice::deleteProperty(const char *propertyName)
     // Keep dynamic properties in existing property list so they can be reused
     if (d->deleteDynamicProperties == false)
     {
-        INDI::Property *prop = getProperty(propertyName);
-        if (prop && prop->isDynamic())
+        INDI::Property prop = getProperty(propertyName);
+        if (prop.isValid() && prop.isDynamic())
         {
             IDDelete(getDeviceName(), propertyName, nullptr);
             return true;
@@ -1188,8 +1188,8 @@ void DefaultDevice::setActiveConnection(Connection::Interface *existingConnectio
                 d->ConnectionModeSP[index].setState(ISS_ON);
                 d->ConnectionModeSP.setState(IPS_OK);
                 // If property is registerned then send back response to client
-                INDI::Property *connectionProperty = getProperty(d->ConnectionModeSP.getName(), INDI_SWITCH);
-                if (connectionProperty && connectionProperty->getRegistered())
+                INDI::Property connectionProperty = getProperty(d->ConnectionModeSP.getName(), INDI_SWITCH);
+                if (connectionProperty.isValid() && connectionProperty.getRegistered())
                     d->ConnectionModeSP.apply();
             }
         }
