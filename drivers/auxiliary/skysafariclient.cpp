@@ -61,26 +61,26 @@ void SkySafariClient::newDevice(INDI::BaseDevice *dp)
 /**************************************************************************************
 **
 *************************************************************************************/
-void SkySafariClient::newProperty(INDI::Property *property)
+void SkySafariClient::newProperty(INDI::Property property)
 {
-    if (!strcmp(property->getName(), "TELESCOPE_PARK"))
-        mountParkSP = property->getSwitch();
-    else if (!strcmp(property->getName(), "EQUATORIAL_EOD_COORD"))
-        eqCoordsNP = property->getNumber();
-    else if (!strcmp(property->getName(), "GEOGRAPHIC_COORD"))
-        geoCoordsNP = property->getNumber();
-    else if (!strcmp(property->getName(), "ON_COORD_SET"))
-        gotoModeSP = property->getSwitch();
-    else if (!strcmp(property->getName(), "TELESCOPE_ABORT_MOTION"))
-        abortSP = property->getSwitch();
-    else if (!strcmp(property->getName(), "TELESCOPE_SLEW_RATE"))
-        slewRateSP = property->getSwitch();
-    else if (!strcmp(property->getName(), "TELESCOPE_MOTION_NS"))
-        motionNSSP = property->getSwitch();
-    else if (!strcmp(property->getName(), "TELESCOPE_MOTION_WE"))
-        motionWESP = property->getSwitch();
-    else if (!strcmp(property->getName(), "TIME_UTC"))
-        timeUTC = property->getText();
+    if (!strcmp(property.getName(), "TELESCOPE_PARK"))
+        mountParkSP = property.getSwitch();
+    else if (!strcmp(property.getName(), "EQUATORIAL_EOD_COORD"))
+        eqCoordsNP = property.getNumber();
+    else if (!strcmp(property.getName(), "GEOGRAPHIC_COORD"))
+        geoCoordsNP = property.getNumber();
+    else if (!strcmp(property.getName(), "ON_COORD_SET"))
+        gotoModeSP = property.getSwitch();
+    else if (!strcmp(property.getName(), "TELESCOPE_ABORT_MOTION"))
+        abortSP = property.getSwitch();
+    else if (!strcmp(property.getName(), "TELESCOPE_SLEW_RATE"))
+        slewRateSP = property.getSwitch();
+    else if (!strcmp(property.getName(), "TELESCOPE_MOTION_NS"))
+        motionNSSP = property.getSwitch();
+    else if (!strcmp(property.getName(), "TELESCOPE_MOTION_WE"))
+        motionWESP = property.getSwitch();
+    else if (!strcmp(property.getName(), "TIME_UTC"))
+        timeUTC = property.getText();
 }
 
 /**************************************************************************************

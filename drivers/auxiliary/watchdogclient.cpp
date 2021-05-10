@@ -64,12 +64,12 @@ void WatchDogClient::newDevice(INDI::BaseDevice *dp)
 /**************************************************************************************
 **
 *************************************************************************************/
-void WatchDogClient::newProperty(INDI::Property *property)
+void WatchDogClient::newProperty(INDI::Property property)
 {
-    if (!strcmp(property->getName(), "TELESCOPE_PARK"))
-        mountParkSP = property->getSwitch();
-    else if (!strcmp(property->getName(), "DOME_PARK"))
-        domeParkSP = property->getSwitch();
+    if (!strcmp(property.getName(), "TELESCOPE_PARK"))
+        mountParkSP = property.getSwitch();
+    else if (!strcmp(property.getName(), "DOME_PARK"))
+        domeParkSP = property.getSwitch();
 }
 
 /**************************************************************************************

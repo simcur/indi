@@ -48,8 +48,8 @@ public:
 protected:
     void newDevice(INDI::BaseDevice *dp) override;
     void removeDevice(INDI::BaseDevice */*dp*/) override {}
-    void newProperty(INDI::Property *property) override;
-    void removeProperty(INDI::Property */*property*/) override {}
+    void newProperty(INDI::Property property) override;
+    void removeProperty(INDI::Property /*property*/) override {}
     void newBLOB(IBLOB *bp) override;
     void newSwitch(ISwitchVectorProperty */*svp*/) override {}
     void newNumber(INumberVectorProperty *nvp) override;

@@ -38,6 +38,7 @@
  *
  *  @author Jasem Mutlaq
  */
+#define INDI_BASEDEVICE_VERSION 2
 namespace INDI
 {
 

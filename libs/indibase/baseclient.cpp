@@ -605,7 +605,7 @@ int BaseClientPrivate::delPropertyCommand(XMLEle *root, char *errmsg)
             return -1;
         }
         if (sConnected)
-            parent->removeProperty(&rProp); // Mediator
+            parent->removeProperty(rProp); // Mediator
         int errCode = dp->removeProperty(valuXMLAtt(ap), errmsg);
 
         return errCode;

@@ -458,7 +458,7 @@ int BaseDevice::buildProp(XMLEle *root, char *errmsg)
 
         //IDLog("Adding number property %s to list.\n", indiProp->getName());
         if (d->mediator)
-            d->mediator->newProperty(&indiProp);
+            d->mediator->newProperty(indiProp);
     }
 
     return (0);

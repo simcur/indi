@@ -472,13 +472,13 @@ void Imager::newDevice(INDI::BaseDevice *dp)
     IDSetLight(&StatusLP, nullptr);
 }
 
-void Imager::newProperty(INDI::Property *property)
+void Imager::newProperty(INDI::Property property)
 {
-    std::string deviceName{property->getDeviceName()};
+    std::string deviceName{property.getDeviceName()};
 
-    if (strcmp(property->getName(), INDI::SP::CONNECTION) == 0)
+    if (strcmp(property.getName(), INDI::SP::CONNECTION) == 0)
     {
-        bool state = property->getSwitch()->sp[0].s != ISS_OFF;
+        bool state = property.getSwitch()->at(0)->getState() != ISS_OFF;
         if (deviceName == controlledCCD)
         {
             if (state)
@@ -507,7 +507,7 @@ void Imager::newProperty(INDI::Property *property)
     }
 }
 
-void Imager::removeProperty(INDI::Property *property)
+void Imager::removeProperty(INDI::Property property)
 {
     INDI_UNUSED(property);
 }

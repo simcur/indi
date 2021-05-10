@@ -46,8 +46,8 @@ class Imager : public virtual INDI::DefaultDevice, public virtual INDI::BaseClie
         // BaseClient
 
         virtual void newDevice(INDI::BaseDevice *dp) override;
-        virtual void newProperty(INDI::Property *property) override;
-        virtual void removeProperty(INDI::Property *property) override;
+        virtual void newProperty(INDI::Property property) override;
+        virtual void removeProperty(INDI::Property property) override;
         virtual void removeDevice(INDI::BaseDevice *dp) override;
         virtual void newBLOB(IBLOB *bp) override;
         virtual void newSwitch(ISwitchVectorProperty *svp) override;

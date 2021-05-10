@@ -127,15 +127,15 @@ void MyClient::newDevice(INDI::BaseDevice *dp)
 /**************************************************************************************
 **
 *************************************************************************************/
-void MyClient::newProperty(INDI::Property *property)
+void MyClient::newProperty(INDI::Property property)
 {
-    if (strcmp(property->getDeviceName(), MYCCD) == 0 && strcmp(property->getName(), "CONNECTION") == 0)
+    if (strcmp(property.getDeviceName(), MYCCD) == 0 && strcmp(property.getName(), "CONNECTION") == 0)
     {
         connectDevice(MYCCD);
         return;
     }
 
-    if (strcmp(property->getDeviceName(), MYCCD) == 0 && strcmp(property->getName(), "CCD_TEMPERATURE") == 0)
+    if (strcmp(property.getDeviceName(), MYCCD) == 0 && strcmp(property.getName(), "CCD_TEMPERATURE") == 0)
     {
         if (ccd_simulator->isConnected())
         {
