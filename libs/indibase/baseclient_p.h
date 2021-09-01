@@ -11,7 +11,7 @@
 #include <thread>
 #include <cstdint>
 
-#include <lilxml.h>
+#include "lilxml.h"
 
 #ifdef _WINDOWS
 #if defined(_MSC_VER)

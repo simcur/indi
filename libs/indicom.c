@@ -66,7 +66,12 @@
 
 #if defined(BSD) && !defined(__GNU__)
 #ifdef __APPLE__
-#include <IOKit/serial/ioss.h>
+
+	// For iOS: replace this include with these defines
+	//#include <IOKit/serial/ioss.h>
+	const unsigned long IOSSIOSPEED = 0x80045402; //_IOW('T', 2, speed_t)
+	const unsigned long IOSSDATALAT = 0x80085400;
+
 #endif
 #include <sys/ioctl.h>
 #endif
