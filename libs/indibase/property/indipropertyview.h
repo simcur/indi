@@ -714,23 +714,23 @@ inline double PropertyView<ILight>::getTimeout() const
 
 template <>
 inline void PropertyView<IText>::setWidgets(WidgetType *w, size_t size)
-{ this->tp = w; this->ntp = size; }
+{ this->tp = w; this->ntp = (int) size; }
 
 template <>
 inline void PropertyView<INumber>::setWidgets(WidgetType *w, size_t size)
-{ this->np = w; this->nnp = size; }
+{ this->np = w; this->nnp = (int) size; }
 
 template <>
 inline void PropertyView<ISwitch>::setWidgets(WidgetType *w, size_t size)
-{ this->sp = w; this->nsp = size; }
+{ this->sp = w; this->nsp = (int) size; }
 
 template <>
 inline void PropertyView<ILight>::setWidgets(WidgetType *w, size_t size)
-{ this->lp = w; this->nlp = size; }
+{ this->lp = w; this->nlp = (int) size; }
 
 template <>
 inline void PropertyView<IBLOB>::setWidgets(WidgetType *w, size_t size)
-{ this->bp = w; this->nbp = size; }
+{ this->bp = w; this->nbp = (int) size; }
 
 template <>
 inline int PropertyView<IText>::count() const

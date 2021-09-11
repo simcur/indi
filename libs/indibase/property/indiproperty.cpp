@@ -88,11 +88,11 @@ Property::operator const INDI::Property *() const
 #define PROPERTY_CASE(CODE) \
     switch (d->property != nullptr ? d->type : INDI_UNKNOWN) \
     { \
-        case INDI_NUMBER: { auto property = static_cast<PropertyView<INumber> *>(d->property); CODE } break; \
-        case INDI_TEXT:   { auto property = static_cast<PropertyView<IText>   *>(d->property); CODE } break; \
-        case INDI_SWITCH: { auto property = static_cast<PropertyView<ISwitch> *>(d->property); CODE } break; \
-        case INDI_LIGHT:  { auto property = static_cast<PropertyView<ILight>  *>(d->property); CODE } break; \
-        case INDI_BLOB:   { auto property = static_cast<PropertyView<IBLOB>   *>(d->property); CODE } break; \
+        case INDI_NUMBER: { auto local_property = static_cast<PropertyView<INumber> *>(d->property); CODE } break; \
+        case INDI_TEXT:   { auto local_property = static_cast<PropertyView<IText>   *>(d->property); CODE } break; \
+        case INDI_SWITCH: { auto local_property = static_cast<PropertyView<ISwitch> *>(d->property); CODE } break; \
+        case INDI_LIGHT:  { auto local_property = static_cast<PropertyView<ILight>  *>(d->property); CODE } break; \
+        case INDI_BLOB:   { auto local_property = static_cast<PropertyView<IBLOB>   *>(d->property); CODE } break; \
         default:; \
     }
 
@@ -104,7 +104,7 @@ PropertyPrivate::~PropertyPrivate()
         return;
 
     auto d = this;
-    PROPERTY_CASE( delete property; )
+    PROPERTY_CASE( delete local_property; )
 }
 
 Property::Property()
@@ -225,90 +225,90 @@ BaseDevice *Property::getBaseDevice() const
 void Property::setName(const char *name)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setName(name); )
+    PROPERTY_CASE( local_property->setName(name); )
 }
 
 void Property::setLabel(const char *label)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setLabel(label); )
+    PROPERTY_CASE( local_property->setLabel(label); )
 }
 
 void Property::setGroupName(const char *group)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setGroupName(group); )
+    PROPERTY_CASE( local_property->setGroupName(group); )
 }
 
 void Property::setDeviceName(const char *device)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setDeviceName(device); )
+    PROPERTY_CASE( local_property->setDeviceName(device); )
 }
 
 void Property::setTimestamp(const char *timestamp)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setTimestamp(timestamp); )
+    PROPERTY_CASE( local_property->setTimestamp(timestamp); )
 }
 
 void Property::setState(IPState state)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setState(state); )
+    PROPERTY_CASE( local_property->setState(state); )
 }
 
 void Property::setPermission(IPerm permission)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setPermission(permission); )
+    PROPERTY_CASE( local_property->setPermission(permission); )
 }
 
 void Property::setTimeout(double timeout)
 {
     D_PTR(Property);
-    PROPERTY_CASE( property->setTimeout(timeout); )
+    PROPERTY_CASE( local_property->setTimeout(timeout); )
 }
 
 const char *Property::getName() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getName(); )
+    PROPERTY_CASE( return local_property->getName(); )
     return nullptr;
 }
 
 const char *Property::getLabel() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getLabel(); )
+    PROPERTY_CASE( return local_property->getLabel(); )
     return nullptr;
 }
 
 const char *Property::getGroupName() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getGroupName(); )
+    PROPERTY_CASE( return local_property->getGroupName(); )
     return nullptr;
 }
 
 const char *Property::getDeviceName() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getDeviceName(); )
+    PROPERTY_CASE( return local_property->getDeviceName(); )
     return nullptr;
 }
 
 const char *Property::getTimestamp() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getTimestamp(); )
+    PROPERTY_CASE( return local_property->getTimestamp(); )
     return nullptr;
 }
 
 IPState Property::getState() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getState(); )
+    PROPERTY_CASE( return local_property->getState(); )
     return IPS_ALERT;
 }
 
@@ -320,14 +320,14 @@ const char *Property::getStateAsString() const
 IPerm Property::getPermission() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->getPermission(); )
+    PROPERTY_CASE( return local_property->getPermission(); )
     return IP_RO;
 }
 
 bool Property::isEmpty() const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->isEmpty(); )
+    PROPERTY_CASE( return local_property->isEmpty(); )
     return true;
 }
 
@@ -340,28 +340,28 @@ bool Property::isValid() const
 bool Property::isNameMatch(const char *otherName) const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->isNameMatch(otherName); )
+    PROPERTY_CASE( return local_property->isNameMatch(otherName); )
     return false;
 }
 
 bool Property::isNameMatch(const std::string &otherName) const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->isNameMatch(otherName); )
+    PROPERTY_CASE( return local_property->isNameMatch(otherName); )
     return false;
 }
 
 bool Property::isLabelMatch(const char *otherLabel) const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->isLabelMatch(otherLabel); )
+    PROPERTY_CASE( return local_property->isLabelMatch(otherLabel); )
     return false;
 }
 
 bool Property::isLabelMatch(const std::string &otherLabel) const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( return property->isLabelMatch(otherLabel); )
+    PROPERTY_CASE( return local_property->isLabelMatch(otherLabel); )
     return false;
 }
 
@@ -413,7 +413,7 @@ PropertyView<IBLOB> *Property::getBLOB() const
 void Property::save(FILE *fp) const
 {
     D_PTR(const Property);
-    PROPERTY_CASE( property->save(fp); )
+    PROPERTY_CASE( local_property->save(fp); )
 }
 
 void Property::apply(const char *format, ...) const
@@ -421,7 +421,7 @@ void Property::apply(const char *format, ...) const
     D_PTR(const Property);
     va_list ap;
     va_start(ap, format);
-    PROPERTY_CASE( property->vapply(format, ap); )
+    PROPERTY_CASE( local_property->vapply(format, ap); )
     va_end(ap);
 }
 
@@ -430,7 +430,7 @@ void Property::define(const char *format, ...) const
     D_PTR(const Property);
     va_list ap;
     va_start(ap, format);
-    PROPERTY_CASE( property->vdefine(format, ap); )
+    PROPERTY_CASE( local_property->vdefine(format, ap); )
     va_end(ap);
 }
 

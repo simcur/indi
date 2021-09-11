@@ -19,7 +19,12 @@
 #pragma once
 
 #include "indibase.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-w"
 #include "indiproperty.h"
+#pragma clang pop
+
 #include "indiproperties.h"
 #include "indiutility.h"
 
