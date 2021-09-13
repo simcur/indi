@@ -26,10 +26,13 @@
 
 #include "indiwidgetview.h"
 
+// XCode 12.5+ has problems with cstdlib: https://www.gitmemory.com/issue/fnc12/sqlite_orm/716/831376970
+
+#include <stdlib.h> // #include <cstdlib>
+
 #include <string>
 #include <cstring>
 #include <cstdarg>
-#include <cstdlib>
 #include <type_traits>
 
 namespace INDI
