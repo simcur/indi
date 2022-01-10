@@ -336,7 +336,7 @@ double time_ns()
     ts.tv_sec = mts.tv_sec;
     ts.tv_nsec = mts.tv_nsec;
 #else
-    timespec_get(&ts, TIME_UTC);
+	clock_gettime(CLOCK_REALTIME, &ts);
 #endif
     return (double)ts.tv_sec+(double)(ts.tv_nsec%1000000000)/1000000000.0;
 }

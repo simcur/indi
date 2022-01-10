@@ -20,10 +20,12 @@
 
 #include "indibase.h"
 
+#ifndef ANDROID_NDK
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-w"
 #include "indiproperty.h"
 #pragma clang pop
+#endif
 
 #include "indiproperties.h"
 #include "indiutility.h"
