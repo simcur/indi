@@ -19,6 +19,7 @@ CMakeCache.txt
 *_automoc.cpp
 *autogen/
 unitybuild_*.c*
+*.o
 *.a
 *.so.*
 *.so
