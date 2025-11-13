@@ -31,7 +31,7 @@
 #include "locale_compat.h"
 #include "base64.h"
 
-#include "config.h"
+#include "indi-config.h"
 
 #if defined(HAVE_LIBNOVA)
 #include <libnova/julian_day.h>
